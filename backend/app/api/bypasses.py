@@ -60,13 +60,36 @@ async def request_bypass(payload: BypassRequest, request: Request, db: Session =
         )
         raise HTTPException(status_code=401, detail="Invalid PIN")
 
-    bypass = await create_bypass(
-        db,
-        domain=payload.domain,
-        client_ip=client_ip,
-        duration=payload.duration,
-        approved_by=approver,
-    )
+    try:
+        bypass = await create_bypass(
+            db,
+            domain=payload.domain,
+            client_ip=client_ip,
+            duration=payload.duration,
+            approved_by=approver,
+        )
+    except Exception as exc:
+        log_event(
+            db,
+            action="adguard_api_failure",
+            result="error",
+            client_ip=client_ip,
+            domain=payload.domain,
+            profile_id=approver.id,
+            metadata={"error": str(exc)},
+        )
+        await notify_discord(
+            db,
+            "AdGuard API failure",
+            {
+                "domain": payload.domain,
+                "client_ip": client_ip,
+                "profile": approver.display_name,
+                "result": "adguard_api_failure",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+        raise HTTPException(status_code=502, detail="Could not create AdGuard bypass rule") from exc
     log_event(db, action="pin_success", result="success", client_ip=client_ip, domain=payload.domain, profile_id=approver.id)
     await notify_discord(
         db,

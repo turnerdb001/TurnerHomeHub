@@ -64,7 +64,7 @@ class AdGuardClient:
     async def list_rules(self) -> list[str]:
         response = await self._request("GET", "/control/filtering/status")
         data = response.json()
-        user_rules = data.get("user_rules", [])
+        user_rules = data.get("user_rules") or []
         return [str(rule) for rule in user_rules]
 
     async def set_rules(self, rules: list[str]) -> None:
