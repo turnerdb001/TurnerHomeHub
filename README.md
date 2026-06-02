@@ -99,13 +99,13 @@ Admin login accounts are separate from family profiles.
 
 ## Block Page Routing
 
-The frontend exposes `/` and `/block`. Pass the blocked domain as a query string:
+The frontend exposes `/block` and `/blocked` for manual/test bypass flows. Pass the blocked domain as a query string:
 
 ```text
 http://192.168.1.164:8090/block?domain=youtube.com
 ```
 
-AdGuard DNS rewrites can point blocked domains to the Docker host, but HTTPS sites usually show certificate/privacy warnings unless SSL inspection or a trusted certificate flow is implemented. See [docs/adguard-setup.md](docs/adguard-setup.md).
+Direct visits to `/` show the normal Home Hub status page. AdGuard should block domains at the DNS/filtering layer; Home Hub provides logging, Discord notifications, device/profile ownership, and temporary bypass approvals. HTTPS sites may show certificate/privacy warnings if DNS-rewritten to Home Hub. See [docs/adguard-setup.md](docs/adguard-setup.md).
 
 ## Backups And Restores
 

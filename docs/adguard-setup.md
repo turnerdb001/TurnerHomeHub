@@ -1,31 +1,51 @@
 # AdGuard Setup Helper
 
-Turner Home Hub works best when AdGuard redirects blocked destinations to the dashboard host and the block page receives the original domain as context where possible.
+Turner Home Hub uses AdGuard as the network-level blocker. Home Hub adds profiles, device ownership, Discord notifications, logs, and PIN-based temporary bypasses.
 
-## DNS Rewrites
+Do not put Home Hub in AdGuard's upstream DNS settings. Keep upstream DNS pointed at Quad9, AdGuard DNS, Cloudflare, or your preferred resolver.
 
-Add DNS rewrites in AdGuard Home:
+## Recommended Pattern
+
+- Use AdGuard custom filtering rules to block domains.
+- Use Home Hub to manage devices, profiles, notifications, and bypasses.
+- Use the Home Hub block page for manual/test bypass flows.
+- Accept that public HTTPS sites may show certificate/privacy warnings if you DNS-rewrite them to Home Hub.
+
+## Filtering Rules
+
+Add blocked domains as AdGuard custom filtering rules:
 
 ```text
-blocked.home.arpa -> 192.168.1.164
-youtube.com -> 192.168.1.164
-tiktok.com -> 192.168.1.164
-character.ai -> 192.168.1.164
+||youtube.com^
+||tiktok.com^
+||character.ai^
 ```
 
-Then point browser/device block experiences at:
+Home Hub creates temporary allow rules during bypasses:
 
 ```text
-http://192.168.1.164:8090/block?domain=example.com
+@@||youtube.com^$client=192.168.1.55
 ```
 
 ## HTTPS Limitations
 
 DNS redirects for HTTPS sites commonly show certificate or privacy warnings. The browser requested `https://youtube.com`, but Turner Home Hub cannot present a valid certificate for that domain. Solving this requires SSL inspection, a managed local CA installed on devices, or accepting that HTTPS block flows may stop at the browser warning before the block page.
 
-## Recommended LAN Pattern
+For this deployment, prefer network-level blocking plus Home Hub logging/notifications instead of TLS interception.
 
-- Use AdGuard to block domains and keep audit history.
-- Use Turner Home Hub for bypass approvals, family dashboarding, and notifications.
-- Prefer per-client AdGuard allow rules when the blocked client IP is known.
-- Keep PostgreSQL internal to Docker and expose only frontend/backend ports to the LAN.
+## Optional Local DNS Rewrites
+
+Local rewrites are useful for easy access to Home Hub and manual block-page tests:
+
+```text
+blocked.home.arpa -> 192.168.1.164
+homehub.home.arpa -> 192.168.1.164
+```
+
+Manual block-page test:
+
+```text
+http://blocked.home.arpa:8090/block?domain=youtube.com
+```
+
+Do not rely on DNS rewrites from public HTTPS domains to Home Hub for a polished custom block page. The browser certificate warning is expected.
