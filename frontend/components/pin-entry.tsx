@@ -9,6 +9,24 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Select } from "./ui/select";
 
+function redirectTargetForDomain(domain: string): string | null {
+  const trimmed = domain.trim();
+  if (!trimmed || trimmed === "restricted.local") {
+    return null;
+  }
+
+  try {
+    const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const url = new URL(withScheme);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function PinEntry({
   domain,
   clientIp,
@@ -31,6 +49,12 @@ export function PinEntry({
       });
       toast.success("Temporary bypass approved");
       setPin("");
+      const redirectTarget = redirectTargetForDomain(domain);
+      if (redirectTarget) {
+        window.setTimeout(() => {
+          window.location.assign(redirectTarget);
+        }, 1500);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "PIN failed");
     } finally {
