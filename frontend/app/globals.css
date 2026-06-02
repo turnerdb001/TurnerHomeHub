@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 218 33% 7%;
+  --foreground: 190 80% 92%;
+  --card: 220 28% 10%;
+  --border: 188 86% 32%;
+  --primary: 184 100% 54%;
+  --secondary: 264 84% 70%;
+  --danger: 349 86% 60%;
+  --muted: 215 19% 52%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: hsl(var(--foreground));
+  background:
+    radial-gradient(circle at 25% 15%, hsl(var(--primary) / 0.12), transparent 28rem),
+    radial-gradient(circle at 82% 6%, hsl(var(--secondary) / 0.12), transparent 22rem),
+    hsl(var(--background));
+}
+
+.grid-surface {
+  background-image:
+    linear-gradient(hsl(var(--primary) / 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--primary) / 0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.scanline::after {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, hsl(var(--primary) / 0.04), transparent);
+  background-size: 100% 8px;
+  mix-blend-mode: screen;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}

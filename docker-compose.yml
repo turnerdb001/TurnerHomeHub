@@ -1,0 +1,98 @@
+services:
+  database:
+    image: postgres:16-alpine
+    container_name: turner-home-hub-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-turnerhomehub}
+      POSTGRES_USER: ${POSTGRES_USER:-turner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-turner} -d ${POSTGRES_DB:-turnerhomehub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - turner_home
+
+  backend:
+    build:
+      context: ./backend
+    container_name: turner-home-hub-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://turner:changeme@database:5432/turnerhomehub}
+    ports:
+      - "${BACKEND_PORT:-8095}:8095"
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8095/health', timeout=3).read()"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    networks:
+      - turner_home
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://192.168.1.164:${BACKEND_PORT:-8095}
+    container_name: turner-home-hub-web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://192.168.1.164:${BACKEND_PORT:-8095}
+    ports:
+      - "${FRONTEND_PORT:-8090}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    networks:
+      - turner_home
+
+  worker:
+    build:
+      context: ./backend
+    container_name: turner-home-hub-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: ["python", "-m", "app.worker"]
+    depends_on:
+      database:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    networks:
+      - turner_home
+
+  adminer:
+    image: adminer:4
+    container_name: turner-home-hub-adminer
+    restart: unless-stopped
+    profiles: ["tools"]
+    ports:
+      - "8091:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - turner_home
+
+volumes:
+  postgres_data:
+
+networks:
+  turner_home:
+    driver: bridge
